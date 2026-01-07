@@ -1,0 +1,37 @@
+name: 'Test Scenario Extractor'
+description: 'AI 기반 코드 변경 분석 및 테스트 시나리오 추천'
+author: 'skswhwo'
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for PR comments'
+    required: true
+  openai-api-key:
+    description: 'OpenAI API key'
+    required: true
+  model:
+    description: 'OpenAI model to use'
+    required: false
+    default: 'o3-mini'
+  language:
+    description: 'Output language (ko/en)'
+    required: false
+    default: 'ko'
+  max-files:
+    description: 'Maximum number of files to analyze'
+    required: false
+    default: '20'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    MODEL: ${{ inputs.model }}
+    LANGUAGE: ${{ inputs.language }}
+    MAX_FILES: ${{ inputs.max-files }}
