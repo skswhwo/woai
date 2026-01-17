@@ -34,6 +34,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          language: ko
 ```
 
 ### 2. Secrets 설정
