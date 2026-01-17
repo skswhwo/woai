@@ -19,7 +19,7 @@ inputs:
   model:
     description: 'OpenAI model to use for scenario generation'
     required: false
-    default: 'o3-mini'
+    default: 'gpt-4o'
   language:
     description: 'Output language (ko/en)'
     required: false

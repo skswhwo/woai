@@ -57,7 +57,8 @@ class DescriptionGenerator:
 ## 주의사항
 - 기술적으로 정확하게 작성
 - 불필요한 내용 제외, 핵심만 간결하게
-- 응답은 반드시 JSON 형식이어야 합니다"""
+- 응답은 반드시 JSON 형식이어야 합니다
+- **모든 내용은 반드시 한국어로 작성하세요**"""
         else:
             return """You are an expert at writing Pull Request descriptions.
 Analyze code changes and write clear, concise PR descriptions.

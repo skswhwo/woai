@@ -112,7 +112,7 @@ def main():
     github_token = os.environ.get('GITHUB_TOKEN')
     openai_api_key = os.environ.get('OPENAI_API_KEY')
     anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
-    model = os.environ.get('MODEL', 'o3-mini')
+    model = os.environ.get('MODEL', 'gpt-4o')
     language = os.environ.get('LANGUAGE', 'ko')
     max_files = int(os.environ.get('MAX_FILES', '50'))
     mode = os.environ.get('MODE', 'both')
