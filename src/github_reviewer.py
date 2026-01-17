@@ -1,8 +1,11 @@
 import os
 import json
+import logging
 from typing import Optional, List, Dict, Tuple
 from github import Github
 from review_generator import ReviewResult, ReviewComment
+
+logger = logging.getLogger(__name__)
 
 
 class GitHubReviewer:
@@ -37,15 +40,20 @@ class GitHubReviewer:
         # Build review comments for GitHub API
         review_comments, fallback_comments = self._build_review_comments(pr, result.comments)
 
+        logger.info(f"Total comments: {len(result.comments)}, Line comments: {len(review_comments)}, Fallback: {len(fallback_comments)}")
+        for rc in review_comments:
+            logger.info(f"Line comment: {rc['path']} (position {rc['position']}) - {rc.get('body', '')[:50]}...")
+
         # Map approval to GitHub event
+        # Note: GitHub Actions cannot APPROVE PRs, so we use COMMENT instead
         event_map = {
-            'approve': 'APPROVE',
+            'approve': 'COMMENT',  # GitHub Actions doesn't have permission to approve
             'request_changes': 'REQUEST_CHANGES',
             'comment': 'COMMENT'
         }
         event = event_map.get(result.approval, 'COMMENT')
 
-        # Build review body (include fallback comments)
+        # Build review body (fallback 코멘트만 본문에 표시)
         review_body = self._format_review_body(result, language, fallback_comments)
 
         # Delete previous AI review if exists
@@ -54,14 +62,16 @@ class GitHubReviewer:
         # Create review
         try:
             if review_comments:
+                logger.info(f"Posting review with {len(review_comments)} line comments...")
                 review = pr.create_review(
                     commit=latest_commit,
                     body=review_body,
                     event=event,
                     comments=review_comments
                 )
+                logger.info("Review with line comments posted successfully")
             else:
-                # If no line comments, just post a comment
+                logger.info("No line comments, posting review body only")
                 review = pr.create_review(
                     commit=latest_commit,
                     body=review_body,
@@ -69,6 +79,7 @@ class GitHubReviewer:
                 )
             return review.html_url if hasattr(review, 'html_url') else None
         except Exception as e:
+            logger.error(f"Failed to post review with line comments: {e}")
             # Fallback: post as issue comment if review fails
             comment = pr.create_issue_comment(review_body)
             return comment.html_url
@@ -78,7 +89,7 @@ class GitHubReviewer:
         pr,
         comments: List[ReviewComment]
     ) -> Tuple[List[Dict], List[ReviewComment]]:
-        """Build review comments with correct line positions for GitHub API.
+        """Build review comments with line numbers for GitHub API.
 
         Returns:
             Tuple of (review_comments for line comments, fallback_comments for body)
@@ -86,35 +97,57 @@ class GitHubReviewer:
         review_comments = []
         fallback_comments = []
 
-        # Get file patches to map line numbers
+        # Get file patches to check if line is in diff
         pr_files = {f.filename: f for f in pr.get_files()}
 
         for comment in comments:
             if not comment.path or not comment.line:
+                logger.debug(f"Comment missing path or line: {comment}")
                 fallback_comments.append(comment)
                 continue
 
             pr_file = pr_files.get(comment.path)
             if not pr_file or not pr_file.patch:
+                logger.debug(f"File not found or no patch: {comment.path}")
                 fallback_comments.append(comment)
                 continue
 
-            # Calculate the position in the diff
+            # Calculate position in diff
             position = self._get_diff_position(pr_file.patch, comment.line)
             if position is None:
+                logger.debug(f"Could not calculate position for {comment.path}:{comment.line}")
                 fallback_comments.append(comment)
                 continue
 
             emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
             formatted_comment = f"{emoji} **[{comment.severity.upper()}]** {comment.comment}"
 
+            # position 방식 사용 (더 안정적)
             review_comments.append({
                 'path': comment.path,
                 'position': position,
                 'body': formatted_comment
             })
+            logger.debug(f"Added line comment: {comment.path}:{comment.line} -> position {position}")
 
         return review_comments, fallback_comments
+
+    def _is_line_in_diff(self, patch: str, target_line: int) -> bool:
+        """Check if a line number is within the diff hunks."""
+        if not patch:
+            return False
+
+        import re
+        for match in re.finditer(r'@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@', patch):
+            start_line = int(match.group(1))
+            count = int(match.group(2)) if match.group(2) else 1
+            end_line = start_line + count - 1  # Fixed: inclusive end
+            if start_line <= target_line <= end_line:
+                logger.debug(f"Line {target_line} is in diff hunk ({start_line}-{end_line})")
+                return True
+
+        logger.debug(f"Line {target_line} NOT in any diff hunk")
+        return False
 
     def _get_diff_position(self, patch: str, target_line: int) -> Optional[int]:
         """
@@ -180,15 +213,21 @@ class GitHubReviewer:
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
 
-            # Fallback comments (couldn't be posted as line comments)
-            if fallback_comments:
-                lines.append('### 상세 코멘트')
+            # 모든 코멘트를 접어서 표시
+            if result.comments:
+                lines.append('<details>')
+                lines.append('<summary><strong>상세 코멘트 보기</strong></summary>')
                 lines.append('')
-                for comment in fallback_comments:
+                lines.append('| 파일 | 라인 | 심각도 | 코멘트 |')
+                lines.append('|------|------|--------|--------|')
+                for comment in result.comments:
                     emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
-                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
-                    lines.append(f'> {comment.comment}')
-                    lines.append('')
+                    # 코멘트 내용에서 | 문자 이스케이프
+                    safe_comment = comment.comment.replace('|', '\\|').replace('\n', ' ')
+                    lines.append(f'| `{comment.path}` | {comment.line} | {emoji} {comment.severity} | {safe_comment} |')
+                lines.append('')
+                lines.append('</details>')
+                lines.append('')
 
             # Cost info
             llm_resp = result.llm_response
@@ -215,15 +254,20 @@ class GitHubReviewer:
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
 
-            # Fallback comments (couldn't be posted as line comments)
-            if fallback_comments:
-                lines.append('### Detailed Comments')
+            # 모든 코멘트를 접어서 표시
+            if result.comments:
+                lines.append('<details>')
+                lines.append('<summary><strong>View Detailed Comments</strong></summary>')
                 lines.append('')
-                for comment in fallback_comments:
+                lines.append('| File | Line | Severity | Comment |')
+                lines.append('|------|------|----------|---------|')
+                for comment in result.comments:
                     emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
-                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
-                    lines.append(f'> {comment.comment}')
-                    lines.append('')
+                    safe_comment = comment.comment.replace('|', '\\|').replace('\n', ' ')
+                    lines.append(f'| `{comment.path}` | {comment.line} | {emoji} {comment.severity} | {safe_comment} |')
+                lines.append('')
+                lines.append('</details>')
+                lines.append('')
 
             # Cost info
             llm_resp = result.llm_response

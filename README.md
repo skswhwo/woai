@@ -5,7 +5,7 @@ AI 기반 코드 변경 분석, 테스트 시나리오 추천 및 코드 리뷰 
 ## 기능
 
 - PR의 코드 변경사항을 자동으로 분석
-- OpenAI o3-mini를 사용하여 통합 테스트 시나리오 생성
+- OpenAI gpt-4o를 사용하여 통합 테스트 시나리오 생성
 - AI 기반 코드 리뷰 (OpenAI / Claude 선택 가능)
 - PR 설명 자동 생성 및 기존 설명에 추가
 - 우선순위별 테스트 시나리오 추천
@@ -54,7 +54,7 @@ jobs:
 | `github-token` | O | - | GitHub 토큰 (PR 코멘트용) |
 | `openai-api-key` | X | - | OpenAI API 키 |
 | `anthropic-api-key` | X | - | Anthropic API 키 (Claude 사용 시) |
-| `model` | X | `o3-mini` | 시나리오 생성에 사용할 모델 |
+| `model` | X | `gpt-4o` | 시나리오 생성에 사용할 모델 |
 | `language` | X | `ko` | 출력 언어 (ko/en) |
 | `max-files` | X | `50` | 분석할 최대 파일 수 |
 | `mode` | X | `both` | 실행 모드: scenario / review / both |

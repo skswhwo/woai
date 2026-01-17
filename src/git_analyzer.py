@@ -23,6 +23,7 @@ class PullRequestInfo:
     head_branch: str
     commits: List[str]
     files: List["FileChange"]
+    is_draft: bool = False
 
 
 class GitAnalyzer:
@@ -61,7 +62,8 @@ class GitAnalyzer:
             base_branch=pr.base.ref,
             head_branch=pr.head.ref,
             commits=commits,
-            files=files
+            files=files,
+            is_draft=pr.draft
         )
 
     def _get_file_content(self, repo, filename: str, ref: str) -> Optional[str]:

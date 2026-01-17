@@ -48,53 +48,68 @@ class ScenarioGenerator:
 
 **중요:** 기술 용어 대신 사용자 관점의 언어를 사용하세요.
 
-**응답 형식:**
+**응답 형식 (정확히 따라주세요):**
 
 ## 🧪 테스트 시나리오
 > **핵심 변경사항**: (한 문장 요약)
 
 ### 🔴 높은 우선순위
-- [ ] **시나리오명** - 간단한 설명
-  <details>
-  <summary>테스트 방법</summary>
 
-  1. 테스트 단계 1
-  2. 테스트 단계 2
+- [ ] **시나리오명**
+<details>
+<summary>상세 보기</summary>
 
-  </details>
+**설명:** 무엇을 테스트하는지
+
+**테스트 방법:**
+1. 첫 번째 단계
+2. 두 번째 단계
+
+</details>
 
 ### 🟡 중간 우선순위
-(같은 형식 - details 태그 안에서 summary 뒤에 빈 줄 필수)
+(위와 동일한 형식)
 
 ### 🟢 낮은 우선순위
-(같은 형식)
+(위와 동일한 형식)
 
-**중요:** details 태그 내부에서 </summary> 바로 뒤에 빈 줄을 넣어야 마크다운이 렌더링됨"""
+**규칙:**
+- 체크박스 줄에는 시나리오명만 (설명 X)
+- details 태그는 반드시 새 줄에서 시작
+- summary 뒤에 빈 줄 필수
+- **모든 내용은 반드시 한국어로 작성하세요**"""
         else:
             return """You are a software testing expert. Analyze code changes and recommend test scenarios.
 
-**Response format:**
+**Response format (follow exactly):**
 
 ## 🧪 Test Scenarios
 > **Key Changes**: (one sentence summary)
 
 ### 🔴 High Priority
-- [ ] **Scenario Name** - brief description
-  <details>
-  <summary>Test Steps</summary>
 
-  1. Test step 1
-  2. Test step 2
+- [ ] **Scenario Name**
+<details>
+<summary>View Details</summary>
 
-  </details>
+**Description:** What to test
+
+**Test Steps:**
+1. First step
+2. Second step
+
+</details>
 
 ### 🟡 Medium Priority
-(same format - blank line after </summary> is required)
+(same format as above)
 
 ### 🟢 Low Priority
-(same format)
+(same format as above)
 
-**Important:** Must have blank line after </summary> for markdown to render properly"""
+**Rules:**
+- Checkbox line: scenario name ONLY (no description)
+- details tag MUST start on new line
+- Blank line after summary required"""
 
     def _get_user_prompt(self, code_context: str) -> str:
         if self.language == 'ko':

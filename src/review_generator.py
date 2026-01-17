@@ -88,7 +88,8 @@ Pull Request의 코드 변경사항을 분석하여 코드 품질, 버그, 보�
 - 라인 번호는 파일 내 실제 라인 번호입니다
 - 불필요하게 많은 코멘트는 피하고 중요한 이슈에 집중하세요
 - approval은 critical 이슈가 있으면 "request_changes", 없으면 "approve" 또는 "comment"
-- 응답은 반드시 JSON 형식이어야 합니다 (마크다운 코드블록 없이)"""
+- 응답은 반드시 JSON 형식이어야 합니다 (마크다운 코드블록 없이)
+- **summary와 comment는 반드시 한국어로 작성하세요**"""
         else:
             return """You are an experienced code reviewer.
 Analyze Pull Request code changes and review from perspectives of code quality, bugs, security, and performance.
