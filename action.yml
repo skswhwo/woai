@@ -27,7 +27,7 @@ inputs:
   max-files:
     description: 'Maximum number of files to analyze'
     required: false
-    default: '20'
+    default: '50'
   mode:
     description: 'Operation mode: scenario | review | both'
     required: false
@@ -40,6 +40,10 @@ inputs:
     description: 'Model for review (gpt-4o, claude-3-5-sonnet-20241022, etc)'
     required: false
     default: 'gpt-4o'
+  generate-description:
+    description: 'Generate and append AI description to PR body'
+    required: false
+    default: 'false'
 
 runs:
   using: 'docker'
@@ -54,3 +58,4 @@ runs:
     MODE: ${{ inputs.mode }}
     REVIEW_ENGINE: ${{ inputs.review-engine }}
     REVIEW_MODEL: ${{ inputs.review-model }}
+    GENERATE_DESCRIPTION: ${{ inputs.generate-description }}

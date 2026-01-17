@@ -10,6 +10,7 @@ from scenario_generator import ScenarioGenerator
 from github_commenter import GitHubCommenter
 from review_generator import ReviewGenerator
 from github_reviewer import GitHubReviewer
+from description_generator import DescriptionGenerator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +45,35 @@ def run_scenario_generation(
         logger.info(f"Scenario comment posted: {comment_url}")
     else:
         logger.warning("Could not post scenario comment (not in PR context)")
+
+
+def run_description_generation(
+    pr_info,
+    code_context: str,
+    api_key: str,
+    model: str,
+    language: str,
+    github_token: str
+):
+    """Generate PR description and append to PR body."""
+    logger.info(f"Generating PR description with {model}...")
+
+    llm_client = LLMClient(api_key, model)
+    generator = DescriptionGenerator(llm_client, language)
+    result = generator.generate(code_context, len(pr_info.files))
+
+    logger.info(f"Generated PR description")
+    logger.info(f"API usage: {llm_client.format_cost_info(result.llm_response)}")
+
+    # Format and update PR description
+    description_text = generator.format_description(result)
+    commenter = GitHubCommenter(github_token)
+    pr_url = commenter.update_pr_description_from_env(description_text)
+
+    if pr_url:
+        logger.info(f"PR description updated: {pr_url}")
+    else:
+        logger.warning("Could not update PR description (not in PR context)")
 
 
 def run_code_review(
@@ -84,17 +114,18 @@ def main():
     anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
     model = os.environ.get('MODEL', 'o3-mini')
     language = os.environ.get('LANGUAGE', 'ko')
-    max_files = int(os.environ.get('MAX_FILES', '20'))
+    max_files = int(os.environ.get('MAX_FILES', '50'))
     mode = os.environ.get('MODE', 'both')
     review_engine = os.environ.get('REVIEW_ENGINE', 'openai')
     review_model = os.environ.get('REVIEW_MODEL', 'gpt-4o')
+    generate_description = os.environ.get('GENERATE_DESCRIPTION', 'false').lower() == 'true'
 
     if not github_token:
         logger.error("GITHUB_TOKEN is required")
         sys.exit(1)
 
     # Validate API keys based on mode and engine
-    needs_openai = mode in ('scenario', 'both') or (mode in ('review', 'both') and review_engine == 'openai')
+    needs_openai = mode in ('scenario', 'both') or (mode in ('review', 'both') and review_engine == 'openai') or generate_description
     needs_anthropic = mode in ('review', 'both') and review_engine == 'claude'
 
     if needs_openai and not openai_api_key:
@@ -156,6 +187,16 @@ def main():
                 review_engine=review_engine,
                 review_model=review_model,
                 api_key=api_key,
+                language=language,
+                github_token=github_token
+            )
+
+        if generate_description:
+            run_description_generation(
+                pr_info=pr_info,
+                code_context=code_context,
+                api_key=openai_api_key,
+                model=model,
                 language=language,
                 github_token=github_token
             )
