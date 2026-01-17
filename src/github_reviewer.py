@@ -45,7 +45,7 @@ class GitHubReviewer:
         }
         event = event_map.get(result.approval, 'COMMENT')
 
-        # Build review body (include fallback comments)
+        # Build review body (fallback 코멘트만 본문에 표시)
         review_body = self._format_review_body(result, language, fallback_comments)
 
         # Delete previous AI review if exists
@@ -78,7 +78,7 @@ class GitHubReviewer:
         pr,
         comments: List[ReviewComment]
     ) -> Tuple[List[Dict], List[ReviewComment]]:
-        """Build review comments with correct line positions for GitHub API.
+        """Build review comments with line numbers for GitHub API.
 
         Returns:
             Tuple of (review_comments for line comments, fallback_comments for body)
@@ -86,7 +86,7 @@ class GitHubReviewer:
         review_comments = []
         fallback_comments = []
 
-        # Get file patches to map line numbers
+        # Get file patches to check if line is in diff
         pr_files = {f.filename: f for f in pr.get_files()}
 
         for comment in comments:
@@ -99,22 +99,37 @@ class GitHubReviewer:
                 fallback_comments.append(comment)
                 continue
 
-            # Calculate the position in the diff
-            position = self._get_diff_position(pr_file.patch, comment.line)
-            if position is None:
+            # Check if line is in the diff
+            if not self._is_line_in_diff(pr_file.patch, comment.line):
                 fallback_comments.append(comment)
                 continue
 
             emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
             formatted_comment = f"{emoji} **[{comment.severity.upper()}]** {comment.comment}"
 
+            # 새 방식: line + side 사용 (position 대신)
             review_comments.append({
                 'path': comment.path,
-                'position': position,
+                'line': comment.line,
+                'side': 'RIGHT',  # 새 파일 기준
                 'body': formatted_comment
             })
 
         return review_comments, fallback_comments
+
+    def _is_line_in_diff(self, patch: str, target_line: int) -> bool:
+        """Check if a line number is within the diff hunks."""
+        if not patch:
+            return False
+
+        import re
+        for match in re.finditer(r'@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@', patch):
+            start_line = int(match.group(1))
+            count = int(match.group(2)) if match.group(2) else 1
+            if start_line <= target_line <= start_line + count:
+                return True
+
+        return False
 
     def _get_diff_position(self, patch: str, target_line: int) -> Optional[int]:
         """
@@ -180,15 +195,21 @@ class GitHubReviewer:
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
 
-            # Fallback comments (couldn't be posted as line comments)
-            if fallback_comments:
-                lines.append('### 상세 코멘트')
+            # 모든 코멘트를 접어서 표시
+            if result.comments:
+                lines.append('<details>')
+                lines.append('<summary><strong>상세 코멘트 보기</strong></summary>')
                 lines.append('')
-                for comment in fallback_comments:
+                lines.append('| 파일 | 라인 | 심각도 | 코멘트 |')
+                lines.append('|------|------|--------|--------|')
+                for comment in result.comments:
                     emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
-                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
-                    lines.append(f'> {comment.comment}')
-                    lines.append('')
+                    # 코멘트 내용에서 | 문자 이스케이프
+                    safe_comment = comment.comment.replace('|', '\\|').replace('\n', ' ')
+                    lines.append(f'| `{comment.path}` | {comment.line} | {emoji} {comment.severity} | {safe_comment} |')
+                lines.append('')
+                lines.append('</details>')
+                lines.append('')
 
             # Cost info
             llm_resp = result.llm_response
@@ -215,15 +236,20 @@ class GitHubReviewer:
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
 
-            # Fallback comments (couldn't be posted as line comments)
-            if fallback_comments:
-                lines.append('### Detailed Comments')
+            # 모든 코멘트를 접어서 표시
+            if result.comments:
+                lines.append('<details>')
+                lines.append('<summary><strong>View Detailed Comments</strong></summary>')
                 lines.append('')
-                for comment in fallback_comments:
+                lines.append('| File | Line | Severity | Comment |')
+                lines.append('|------|------|----------|---------|')
+                for comment in result.comments:
                     emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
-                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
-                    lines.append(f'> {comment.comment}')
-                    lines.append('')
+                    safe_comment = comment.comment.replace('|', '\\|').replace('\n', ' ')
+                    lines.append(f'| `{comment.path}` | {comment.line} | {emoji} {comment.severity} | {safe_comment} |')
+                lines.append('')
+                lines.append('</details>')
+                lines.append('')
 
             # Cost info
             llm_resp = result.llm_response
