@@ -151,16 +151,38 @@ class CodeParser:
                 if change.functions_changed:
                     output.append(f"- 함수: {', '.join(change.functions_changed)}")
 
-        output.append("\n# 코드 변경 상세 (Diff)")
+        output.append("\n# 코드 변경 상세")
         for file in pr_info.files:
-            if file.patch:
-                output.append(f"\n## {file.filename}")
+            output.append(f"\n## {file.filename}")
+
+            # 하이브리드: 전체 파일 있으면 사용, 없으면 diff + 주변 컨텍스트
+            if file.content:
+                output.append("(전체 파일)")
                 output.append("```")
-                # Truncate large patches
-                patch = file.patch[:3000] if len(file.patch) > 3000 else file.patch
-                output.append(patch)
-                if len(file.patch) > 3000:
+                output.append(file.content[:8000] if len(file.content) > 8000 else file.content)
+                if len(file.content) > 8000:
+                    output.append("... (truncated)")
+                output.append("```")
+                # diff도 함께 표시 (변경 위치 파악용)
+                if file.patch:
+                    output.append("\n변경된 부분 (diff):")
+                    output.append("```diff")
+                    patch = file.patch[:2000] if len(file.patch) > 2000 else file.patch
+                    output.append(patch)
+                    output.append("```")
+            elif file.patch:
+                output.append("(diff + 컨텍스트)")
+                output.append("```diff")
+                patch = self._expand_patch_context(file.patch)
+                output.append(patch[:4000] if len(patch) > 4000 else patch)
+                if len(patch) > 4000:
                     output.append("... (truncated)")
                 output.append("```")
 
         return '\n'.join(output)
+
+    def _expand_patch_context(self, patch: str) -> str:
+        """diff의 컨텍스트를 확장 (이미 포함된 컨텍스트 라인 표시)"""
+        # GitHub patch는 이미 앞뒤 3줄의 컨텍스트를 포함
+        # 여기서는 추가 처리 없이 반환 (전체 파일이 없는 경우)
+        return patch

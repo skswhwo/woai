@@ -11,6 +11,7 @@ class FileChange:
     additions: int
     deletions: int
     patch: Optional[str]
+    content: Optional[str] = None  # 전체 파일 내용 (하이브리드 컨텍스트용)
 
 
 @dataclass
@@ -28,7 +29,7 @@ class GitAnalyzer:
     def __init__(self, github_token: str):
         self.github = Github(github_token)
 
-    def get_pr_info(self, repo_name: str, pr_number: int, max_files: int = 20) -> PullRequestInfo:
+    def get_pr_info(self, repo_name: str, pr_number: int, max_files: int = 50) -> PullRequestInfo:
         repo = self.github.get_repo(repo_name)
         pr = repo.get_pull(pr_number)
 
@@ -38,12 +39,19 @@ class GitAnalyzer:
         for i, file in enumerate(pr.get_files()):
             if i >= max_files:
                 break
+
+            # 파일 content 가져오기 (삭제된 파일 제외)
+            content = None
+            if file.status != 'removed':
+                content = self._get_file_content(repo, file.filename, pr.head.sha)
+
             files.append(FileChange(
                 filename=file.filename,
                 status=file.status,
                 additions=file.additions,
                 deletions=file.deletions,
-                patch=file.patch if hasattr(file, 'patch') else None
+                patch=file.patch if hasattr(file, 'patch') else None,
+                content=content
             ))
 
         return PullRequestInfo(
@@ -55,6 +63,20 @@ class GitAnalyzer:
             commits=commits,
             files=files
         )
+
+    def _get_file_content(self, repo, filename: str, ref: str) -> Optional[str]:
+        """파일 전체 내용을 가져옴 (500줄 이하인 경우에만)"""
+        try:
+            content_file = repo.get_contents(filename, ref=ref)
+            if content_file.encoding == 'base64':
+                import base64
+                content = base64.b64decode(content_file.content).decode('utf-8')
+                # 500줄 이하인 경우에만 반환
+                if content.count('\n') <= 500:
+                    return content
+            return None
+        except Exception:
+            return None
 
     def get_pr_from_env(self, max_files: int = 20) -> Optional[PullRequestInfo]:
         repo_name = os.environ.get('GITHUB_REPOSITORY')
