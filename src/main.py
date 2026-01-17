@@ -112,7 +112,7 @@ def main():
     github_token = os.environ.get('GITHUB_TOKEN')
     openai_api_key = os.environ.get('OPENAI_API_KEY')
     anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
-    model = os.environ.get('MODEL', 'o3-mini')
+    model = os.environ.get('MODEL', 'gpt-4o')
     language = os.environ.get('LANGUAGE', 'ko')
     max_files = int(os.environ.get('MAX_FILES', '50'))
     mode = os.environ.get('MODE', 'both')
@@ -150,6 +150,10 @@ def main():
 
         logger.info(f"PR #{pr_info.number}: {pr_info.title}")
         logger.info(f"Files changed: {len(pr_info.files)}")
+
+        if pr_info.is_draft:
+            logger.info("PR is draft, skipping analysis")
+            sys.exit(0)
 
         if not pr_info.files:
             logger.info("No files changed, skipping analysis")
