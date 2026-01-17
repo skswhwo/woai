@@ -1,5 +1,5 @@
-name: 'Test Scenario Extractor'
-description: 'AI 기반 코드 변경 분석 및 테스트 시나리오 추천'
+name: 'woai'
+description: 'AI 기반 코드 변경 분석, 테스트 시나리오 추천 및 코드 리뷰'
 author: 'skswhwo'
 
 branding:
@@ -12,9 +12,12 @@ inputs:
     required: true
   openai-api-key:
     description: 'OpenAI API key'
-    required: true
+    required: false
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude'
+    required: false
   model:
-    description: 'OpenAI model to use'
+    description: 'OpenAI model to use for scenario generation'
     required: false
     default: 'o3-mini'
   language:
@@ -25,6 +28,18 @@ inputs:
     description: 'Maximum number of files to analyze'
     required: false
     default: '20'
+  mode:
+    description: 'Operation mode: scenario | review | both'
+    required: false
+    default: 'both'
+  review-engine:
+    description: 'Engine for code review: openai | claude'
+    required: false
+    default: 'openai'
+  review-model:
+    description: 'Model for review (gpt-4o, claude-3-5-sonnet-20241022, etc)'
+    required: false
+    default: 'gpt-4o'
 
 runs:
   using: 'docker'
@@ -32,6 +47,10 @@ runs:
   env:
     GITHUB_TOKEN: ${{ inputs.github-token }}
     OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
     MODEL: ${{ inputs.model }}
     LANGUAGE: ${{ inputs.language }}
     MAX_FILES: ${{ inputs.max-files }}
+    MODE: ${{ inputs.mode }}
+    REVIEW_ENGINE: ${{ inputs.review-engine }}
+    REVIEW_MODEL: ${{ inputs.review-model }}

@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import Union
 from openai import OpenAI
 
 
@@ -10,6 +11,15 @@ class LLMResponse:
     completion_tokens: int
     total_tokens: int
     cost_usd: float
+
+
+def create_client(engine: str, api_key: str, model: str) -> Union['LLMClient', 'AnthropicClient']:
+    """Factory function to create appropriate LLM client based on engine type."""
+    if engine == 'claude':
+        from anthropic_client import AnthropicClient
+        return AnthropicClient(api_key=api_key, model=model)
+    else:
+        return LLMClient(api_key=api_key, model=model)
 
 
 class LLMClient:

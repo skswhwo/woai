@@ -1,6 +1,6 @@
-# Test Scenario Extractor
+# woai
 
-AI 기반 코드 변경 분석 및 테스트 시나리오 추천 GitHub Action
+AI 기반 코드 변경 분석, 테스트 시나리오 추천 및 코드 리뷰 GitHub Action
 
 ## 기능
 
@@ -30,7 +30,7 @@ jobs:
   scenarios:
     runs-on: ubuntu-latest
     steps:
-      - uses: skswhwo/test-scenario-extractor@v1
+      - uses: skswhwo/woai@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -85,7 +85,7 @@ PR에 다음과 같은 코멘트가 생성됩니다:
 ### 로컬 테스트
 
 ```bash
-cd test-scenario-extractor
+cd woai
 
 # 환경 변수 설정
 export GITHUB_TOKEN=your_token
@@ -100,8 +100,8 @@ python src/main.py
 ### Docker 빌드
 
 ```bash
-docker build -t test-scenario-extractor .
-docker run -e GITHUB_TOKEN=xxx -e OPENAI_API_KEY=xxx test-scenario-extractor
+docker build -t woai .
+docker run -e GITHUB_TOKEN=xxx -e OPENAI_API_KEY=xxx woai
 ```
 
 ## 라이선스

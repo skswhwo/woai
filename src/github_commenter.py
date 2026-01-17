@@ -5,7 +5,7 @@ from scenario_generator import ScenarioResult
 
 
 class GitHubCommenter:
-    COMMENT_MARKER = '<!-- test-scenario-extractor -->'
+    COMMENT_MARKER = '<!-- woai -->'
 
     def __init__(self, github_token: str):
         self.github = Github(github_token)
