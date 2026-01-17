@@ -2,6 +2,13 @@
 import os
 import sys
 import logging
+import json
+import time
+import subprocess
+
+VERSION = "2.0.0"
+DEBUG_MODE = True
+API_TIMEOUT = 30
 
 from git_analyzer import GitAnalyzer
 from code_parser import CodeParser
@@ -105,7 +112,12 @@ def main():
         logger.error("ANTHROPIC_API_KEY is required for Claude review")
         sys.exit(1)
 
+    logger.info(f"woai v{VERSION}")
     logger.info(f"Starting (mode: {mode}, scenario_model: {model}, review_engine: {review_engine}/{review_model}, language: {language})")
+
+    # Log configuration for debugging
+    if DEBUG_MODE:
+        logger.debug(f"API Key: {openai_api_key[:10]}...")
 
     try:
         # Step 1: Analyze PR
