@@ -138,7 +138,7 @@ Write a PR description in JSON format for the above changes."""
         lines.append('')
 
         if self.language == 'ko':
-            lines.append('## AI 생성 설명')
+            lines.append('## 설명')
             lines.append('')
             lines.append(f'### 요약')
             lines.append(result.summary)
@@ -151,9 +151,8 @@ Write a PR description in JSON format for the above changes."""
                 lines.append('### 테스트 영향')
                 lines.append(result.test_impact)
                 lines.append('')
-            lines.append(f'> *API 비용: ${result.llm_response.cost_usd:.4f}*')
         else:
-            lines.append('## AI Generated Description')
+            lines.append('## Description')
             lines.append('')
             lines.append(f'### Summary')
             lines.append(result.summary)
@@ -166,6 +165,5 @@ Write a PR description in JSON format for the above changes."""
                 lines.append('### Test Impact')
                 lines.append(result.test_impact)
                 lines.append('')
-            lines.append(f'> *API Cost: ${result.llm_response.cost_usd:.4f}*')
 
         return '\n'.join(lines)
