@@ -53,49 +53,71 @@ class ScenarioGenerator:
 
 **응답 형식 (정확히 따라주세요):**
 
-## 핵심 변경사항
-(한 문장으로 요약)
+## 🧪 테스트 시나리오
 
-## 영향받는 기능
-- 기능1
-- 기능2
-
-## 테스트 시나리오
+> **핵심 변경사항**: (한 문장으로 요약)
 
 ### 🔴 높은 우선순위
 
-• 시나리오: (시나리오 이름)
-  - 설명: (무엇을 테스트하는지 쉽게 설명)
-  - 테스트 방법:
-    ▪ (구체적인 테스트 단계 1)
-    ▪ (구체적인 테스트 단계 2)
+- [ ] **시나리오 이름**
+
+<details>
+<summary>상세 내용 보기</summary>
+
+- 설명: (무엇을 테스트하는지 쉽게 설명)
+- 테스트 방법:
+  - (구체적인 테스트 단계 1)
+  - (구체적인 테스트 단계 2)
+
+</details>
 
 ### 🟡 중간 우선순위
-(같은 형식)
+(같은 형식으로 - [ ] 체크박스와 <details> 태그 사용)
 
 ### 🟢 낮은 우선순위
-(같은 형식)
+(같은 형식으로 - [ ] 체크박스와 <details> 태그 사용)
 
 **시나리오 작성 시 유의사항:**
 - 실제 사용자가 하는 행동으로 설명 (예: "회원가입 버튼 클릭 후...")
 - 코드나 함수명 대신 기능명 사용
-- "~했을 때 ~가 되어야 한다" 형식 권장"""
+- "~했을 때 ~가 되어야 한다" 형식 권장
+- 각 시나리오는 반드시 체크박스(- [ ])로 시작
+- 상세 내용은 <details><summary>상세 내용 보기</summary>...</details> 안에 작성"""
         else:
             return """You are a software testing expert.
 Analyze code changes and recommend integration test scenarios.
 
-Response format:
-1. First, write a one-sentence summary of the key changes.
-2. List affected modules.
-3. Present test scenarios by priority:
-   - High: Core business logic, data integrity, security
-   - Medium: Feature functionality, error handling
-   - Low: UI, performance, edge cases
+**Response format (follow exactly):**
 
-Include for each scenario:
-- Scenario name
-- Description
-- Specific test points (items to verify)"""
+## 🧪 Test Scenarios
+
+> **Key Changes**: (one sentence summary)
+
+### 🔴 High Priority
+
+- [ ] **Scenario Name**
+
+<details>
+<summary>View Details</summary>
+
+- Description: (what to test)
+- Test Steps:
+  - (specific test step 1)
+  - (specific test step 2)
+
+</details>
+
+### 🟡 Medium Priority
+(same format with - [ ] checkbox and <details> tag)
+
+### 🟢 Low Priority
+(same format with - [ ] checkbox and <details> tag)
+
+**Guidelines:**
+- Each scenario MUST start with a checkbox (- [ ])
+- Details MUST be wrapped in <details><summary>View Details</summary>...</details>
+- Use user-facing language, not technical terms
+- Focus on what users do, not code changes"""
 
     def _get_user_prompt(self, code_context: str) -> str:
         if self.language == 'ko':
@@ -103,23 +125,19 @@ Include for each scenario:
 
 {code_context}
 
-위 변경사항에 대해:
-1. 핵심 변경사항 요약
-2. 영향받는 모듈 목록
-3. 우선순위별 테스트 시나리오 (높음/중간/낮음)
-
-마크다운 형식으로 응답해주세요."""
+**중요**: 응답 형식을 정확히 지켜주세요:
+- 각 시나리오는 체크박스(- [ ])로 시작
+- 상세 내용은 <details> 태그로 감싸기
+- 우선순위별로 분류 (🔴 높음 / 🟡 중간 / 🟢 낮음)"""
         else:
             return f"""Analyze the following code changes and recommend integration test scenarios.
 
 {code_context}
 
-For the above changes, provide:
-1. Summary of key changes
-2. List of affected modules
-3. Test scenarios by priority (High/Medium/Low)
-
-Respond in markdown format."""
+**Important**: Follow the response format exactly:
+- Each scenario starts with checkbox (- [ ])
+- Details wrapped in <details> tag
+- Categorize by priority (🔴 High / 🟡 Medium / 🟢 Low)"""
 
     def _parse_response(self, content: str) -> Tuple[List[TestScenario], List[str]]:
         scenarios = []
