@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from github import Github
 from review_generator import ReviewResult, ReviewComment
 
@@ -35,7 +35,7 @@ class GitHubReviewer:
         latest_commit = commits[-1]
 
         # Build review comments for GitHub API
-        review_comments = self._build_review_comments(pr, result.comments)
+        review_comments, fallback_comments = self._build_review_comments(pr, result.comments)
 
         # Map approval to GitHub event
         event_map = {
@@ -45,8 +45,8 @@ class GitHubReviewer:
         }
         event = event_map.get(result.approval, 'COMMENT')
 
-        # Build review body
-        review_body = self._format_review_body(result, language)
+        # Build review body (include fallback comments)
+        review_body = self._format_review_body(result, language, fallback_comments)
 
         # Delete previous AI review if exists
         self._delete_previous_review(pr)
@@ -77,24 +77,32 @@ class GitHubReviewer:
         self,
         pr,
         comments: List[ReviewComment]
-    ) -> List[Dict]:
-        """Build review comments with correct line positions for GitHub API."""
+    ) -> Tuple[List[Dict], List[ReviewComment]]:
+        """Build review comments with correct line positions for GitHub API.
+
+        Returns:
+            Tuple of (review_comments for line comments, fallback_comments for body)
+        """
         review_comments = []
+        fallback_comments = []
 
         # Get file patches to map line numbers
         pr_files = {f.filename: f for f in pr.get_files()}
 
         for comment in comments:
             if not comment.path or not comment.line:
+                fallback_comments.append(comment)
                 continue
 
             pr_file = pr_files.get(comment.path)
             if not pr_file or not pr_file.patch:
+                fallback_comments.append(comment)
                 continue
 
             # Calculate the position in the diff
             position = self._get_diff_position(pr_file.patch, comment.line)
             if position is None:
+                fallback_comments.append(comment)
                 continue
 
             emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
@@ -106,7 +114,7 @@ class GitHubReviewer:
                 'body': formatted_comment
             })
 
-        return review_comments
+        return review_comments, fallback_comments
 
     def _get_diff_position(self, patch: str, target_line: int) -> Optional[int]:
         """
@@ -146,7 +154,12 @@ class GitHubReviewer:
 
         return None
 
-    def _format_review_body(self, result: ReviewResult, language: str) -> str:
+    def _format_review_body(
+        self,
+        result: ReviewResult,
+        language: str,
+        fallback_comments: List[ReviewComment] = None
+    ) -> str:
         lines = [self.REVIEW_MARKER]
         lines.append('')
 
@@ -166,6 +179,16 @@ class GitHubReviewer:
             lines.append(f'- :bulb: Suggestion: {suggestion_count}')
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
+
+            # Fallback comments (couldn't be posted as line comments)
+            if fallback_comments:
+                lines.append('### 상세 코멘트')
+                lines.append('')
+                for comment in fallback_comments:
+                    emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
+                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
+                    lines.append(f'> {comment.comment}')
+                    lines.append('')
 
             # Cost info
             llm_resp = result.llm_response
@@ -191,6 +214,16 @@ class GitHubReviewer:
             lines.append(f'- :bulb: Suggestion: {suggestion_count}')
             lines.append(f'- :pencil2: Nitpick: {nitpick_count}')
             lines.append('')
+
+            # Fallback comments (couldn't be posted as line comments)
+            if fallback_comments:
+                lines.append('### Detailed Comments')
+                lines.append('')
+                for comment in fallback_comments:
+                    emoji = self.SEVERITY_EMOJI.get(comment.severity, '')
+                    lines.append(f'{emoji} **[{comment.severity.upper()}]** `{comment.path}:{comment.line}`')
+                    lines.append(f'> {comment.comment}')
+                    lines.append('')
 
             # Cost info
             llm_resp = result.llm_response
