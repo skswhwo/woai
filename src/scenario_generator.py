@@ -44,100 +44,65 @@ class ScenarioGenerator:
 
     def _get_system_prompt(self) -> str:
         if self.language == 'ko':
-            return """당신은 QA 테스트 전문가입니다.
-코드 변경사항을 분석하여 QA팀이나 기획자도 이해할 수 있는 테스트 시나리오를 추천해야 합니다.
+            return """당신은 QA 테스트 전문가입니다. 코드 변경사항을 분석하여 테스트 시나리오를 추천합니다.
 
-**중요: 기술 용어 대신 사용자 관점의 언어를 사용하세요.**
-- ❌ "isValidGrade 함수가 13까지 유효한 범위로 변경"
-- ✅ "대학생 학년(13학년)을 선택했을 때 정상 동작하는지 확인"
+**중요:** 기술 용어 대신 사용자 관점의 언어를 사용하세요.
 
-**응답 형식 (정확히 따라주세요):**
+**응답 형식 (컴팩트하게, 불필요한 빈 줄 없이):**
 
 ## 🧪 테스트 시나리오
-
-> **핵심 변경사항**: (한 문장으로 요약)
+> **핵심 변경사항**: (한 문장 요약)
 
 ### 🔴 높은 우선순위
-
-- [ ] **시나리오 이름**
-
-<details>
-<summary>상세 내용 보기</summary>
-
-- 설명: (무엇을 테스트하는지 쉽게 설명)
-- 테스트 방법:
-  - (구체적인 테스트 단계 1)
-  - (구체적인 테스트 단계 2)
-
-</details>
+- [ ] **시나리오명** - 간단한 설명
+  <details><summary>테스트 방법</summary>
+  1. 테스트 단계 1
+  2. 테스트 단계 2
+  </details>
 
 ### 🟡 중간 우선순위
-(같은 형식으로 - [ ] 체크박스와 <details> 태그 사용)
+(같은 형식)
 
 ### 🟢 낮은 우선순위
-(같은 형식으로 - [ ] 체크박스와 <details> 태그 사용)
+(같은 형식)
 
-**시나리오 작성 시 유의사항:**
-- 실제 사용자가 하는 행동으로 설명 (예: "회원가입 버튼 클릭 후...")
-- 코드나 함수명 대신 기능명 사용
-- "~했을 때 ~가 되어야 한다" 형식 권장
-- 각 시나리오는 반드시 체크박스(- [ ])로 시작
-- 상세 내용은 <details><summary>상세 내용 보기</summary>...</details> 안에 작성"""
+**유의사항:** 빈 줄 최소화, 시나리오는 체크박스로 시작, 상세 내용은 details 태그 사용"""
         else:
-            return """You are a software testing expert.
-Analyze code changes and recommend integration test scenarios.
+            return """You are a software testing expert. Analyze code changes and recommend test scenarios.
 
-**Response format (follow exactly):**
+**Response format (compact, minimal blank lines):**
 
 ## 🧪 Test Scenarios
-
 > **Key Changes**: (one sentence summary)
 
 ### 🔴 High Priority
-
-- [ ] **Scenario Name**
-
-<details>
-<summary>View Details</summary>
-
-- Description: (what to test)
-- Test Steps:
-  - (specific test step 1)
-  - (specific test step 2)
-
-</details>
+- [ ] **Scenario Name** - brief description
+  <details><summary>Test Steps</summary>
+  1. Test step 1
+  2. Test step 2
+  </details>
 
 ### 🟡 Medium Priority
-(same format with - [ ] checkbox and <details> tag)
+(same format)
 
 ### 🟢 Low Priority
-(same format with - [ ] checkbox and <details> tag)
+(same format)
 
-**Guidelines:**
-- Each scenario MUST start with a checkbox (- [ ])
-- Details MUST be wrapped in <details><summary>View Details</summary>...</details>
-- Use user-facing language, not technical terms
-- Focus on what users do, not code changes"""
+**Guidelines:** Minimize blank lines, use checkboxes, wrap details in details tag"""
 
     def _get_user_prompt(self, code_context: str) -> str:
         if self.language == 'ko':
-            return f"""다음 코드 변경사항을 분석하고 통합 테스트 시나리오를 추천해주세요.
+            return f"""다음 코드 변경사항을 분석하고 테스트 시나리오를 추천해주세요.
 
 {code_context}
 
-**중요**: 응답 형식을 정확히 지켜주세요:
-- 각 시나리오는 체크박스(- [ ])로 시작
-- 상세 내용은 <details> 태그로 감싸기
-- 우선순위별로 분류 (🔴 높음 / 🟡 중간 / 🟢 낮음)"""
+**중요**: 컴팩트하게 작성 (빈 줄 최소화), 체크박스 사용, details 태그로 상세 내용 감싸기"""
         else:
-            return f"""Analyze the following code changes and recommend integration test scenarios.
+            return f"""Analyze the following code changes and recommend test scenarios.
 
 {code_context}
 
-**Important**: Follow the response format exactly:
-- Each scenario starts with checkbox (- [ ])
-- Details wrapped in <details> tag
-- Categorize by priority (🔴 High / 🟡 Medium / 🟢 Low)"""
+**Important**: Keep it compact (minimal blank lines), use checkboxes, wrap details in details tag"""
 
     def _parse_response(self, content: str) -> Tuple[List[TestScenario], List[str]]:
         scenarios = []
